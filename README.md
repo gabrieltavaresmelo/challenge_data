@@ -53,9 +53,9 @@ If you don't have Anaconda installed yet, [download and install Anaconda](https:
 ```bash
 conda info --envs # show environments
 conda env remove --name ktp # remove enviroment
-conda create --name ktp pip python=3.9 # run on linux or windows
-conda create --name ktp pip python=3.10.12 # run on mac os x
-conda activate ktp
+conda create --name ktp pip python=3.9 # create enviroment
+conda create --name ktp pip python=3.10.12 # create enviroment (mac os)
+conda activate ktp # access enviroment
 conda deactivate
 ```
 
@@ -140,8 +140,14 @@ Download and Extract `train.zip` at the root of the project. Optional (only for 
 
 [train.zip](https://1drv.ms/u/s!ArAJOiCdbV7IirQ3_IVEV0kzmNYaVA?e=asyCQi).
 
+### Contact
+
+- **Name:** Gabriel Tavares
+- **Email:** gabriel.tavares@ifce.edu.br
+- **Portfolio:** [https://gabrieltavaresmelo.github.io/portifolio](https://gabrieltavaresmelo.github.io/portifolio)
+
 ---
 
-We hope this project is helpful and provides a clear understanding of change detection in scenes using advanced deep learning techniques. For any questions or issues, feel free to open an issue or contact us.
+We hope this project is helpful and provides a clear understanding of change detection in scenes using advanced deep learning techniques. For any questions or issues, feel free to open an issue or contact me.
 
 🖥️👩‍💻🚀
