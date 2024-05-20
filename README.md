@@ -44,6 +44,8 @@ This project aims to detect changes in scenes captured in two distinct datasets 
 
 ## 🚀 Environment Setup
 
+🎦 [Video Install - Tutorial](https://youtu.be/4AJugbmB5BE).
+
 ### 1. Install Anaconda
 
 If you don't have Anaconda installed yet, [download and install Anaconda](https://www.anaconda.com/products/distribution#download-section) to manage Python packages and environments.
