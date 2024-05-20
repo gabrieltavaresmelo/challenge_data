@@ -1,0 +1,34 @@
+# Ignore Anaconda environment files
+.env
+/.conda/
+
+# Ignore data files
+*.npz
+*.pt
+
+# Ignore result files
+/train/
+/train.zip
+
+# Ignore Python environment files
+__pycache__/
+.env/
+.vscode/
+
+# Ignore development generated files
+*.log
+*.pyc
+
+# Ignore build and cache files
+/build/
+/.cache/
+
+# Ignore Python dependencies and packages files
+*.egg-info/
+/dist/
+/*.egg
+/__pycache__/
+*.py[cod]
+
+# Ignore sensitive data files
+.secret

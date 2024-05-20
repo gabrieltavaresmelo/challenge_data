@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Change Detection</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+
+    <style>
+        #map {
+            height: 50vh;
+        }
+
+        .frame {
+            margin: 5px;
+        }
+
+        .sidebar-right {
+            position: fixed;
+            top: 56.5px;
+            right: 0;
+            bottom: 0;
+            width: 300px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h1 class="modal-title fs-5" id="staticBackdropLabel">About</h1>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p style="text-align: justify;">
+                    This project performs object detection on each image in the <code>base.npz</code> dataset and compares it with the objects detected in <code>test.npz</code>. The comparison of objects not found in <code>test.npz</code> relative to <code>base.npz</code> is presented in a new image called <strong>Changes</strong>. Additionally, compass and GPS data are displayed.
+                </p>
+                <p style="text-align: justify;">
+                    In this project, a Python script was implemented using the OpenCV and YOLOv8 libraries to train a deep neural network, perform detections, and subsequently identify changes in each scenario. To facilitate data visualization, a Python script using Flask was constructed, allowing the results to be accessed through an HTML page.
+                </p>
+            </div>
+          </div>
+        </div>
+    </div>
+
+    <nav class="navbar navbar-expand-lg bg-body-tertiary bg-dark border-bottom border-body" data-bs-theme="dark">
+
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">Change Detection</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText"
+                aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarText">
+                <ul class="navbar-nav mr-auto mb-2 mb-lg-0 text-center">
+                    <li class="nav-item d-flex align-items-center">
+                        <button type="button" class="btn btn-secondary btn-sm me-3" data-bs-toggle="modal" data-bs-target="#staticBackdrop">
+                            <i class="fas fa-circle-info"></i>
+                        </button>
+                    </li>
+                    <li class="nav-item d-flex align-items-center">
+                        <button class="btn btn-sm btn-outline-danger me-3" onclick="resetFrame()">
+                            <i class="fas fa-refresh"></i> Reload
+                        </button>
+                    </li>
+                </ul>
+                <ul class="navbar-nav mx-auto mb-2 mb-lg-0 text-center">
+                    <li class="nav-item d-flex align-items-center">
+                        <button type="button" class="btn btn-light btn-sm me-3">
+                            Index <span id="currentIndex" class="badge text-bg-secondary">0</span>
+                        </button>
+                    </li>
+                    <li class="nav-item d-flex align-items-center">
+                        <select id="frameSelect" class="form-select form-select-sm">
+                        </select>
+                    </li>
+                </ul>
+                <span class="navbar-text">
+                    <a target="_blank" class="nav-link" href="https://gabrieltavaresmelo.github.io/portifolio">About me</a>
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="row mt-4">
+            <div class="col-auto">
+                <button type="button" class="btn btn-warning btn-sm" onclick="previousFrame()">
+                    <i class="fas fa-backward"></i> Previous
+                </button>
+            </div>
+            <div class="col-auto">
+                <button type="button" class="btn btn-warning btn-sm" onclick="nextFrame()">
+                    <i class="fas fa-forward"></i> Next
+                </button>
+            </div>
+            <div class="col-auto">
+                <button id="playButton" type="button" class="btn btn-success btn-sm me-3">
+                    <i class="fas fa-play"></i> Play
+                </button>
+            </div>
+        </div>
+    </div>
+    <div id="frames" class="container text-center">
+        <div class="row">
+            <div class="col-auto">
+                <div class="card mt-4" style="width: 23rem;">
+                    <img id="base_frame" class="card-img-top" src="/static/wait.gif" alt="Base">
+                    <div class="card-body">
+                        <p class="card-text">Base</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-auto">
+                <div class="card mt-4" style="width: 23rem;">
+                    <img id="test_frame" class="card-img-top" src="/static/wait.gif" alt="Test">
+                    <div class="card-body">
+                        <p class="card-text">Test</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-auto">
+                <div class="card mt-4" style="width: 47.5rem;">
+                    <img id="change_frame" class="card-img-top" src="/static/wait.gif" alt="Changes">
+                    <div class="card-body">
+                        <p class="card-text">Changes</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="sidebar_right" class="sidebar-right">
+        <h3 class="lead">Compass</h3>
+        <img id="compass_frame" class="img-fluid" src="/static/wait.gif" alt="Compass Frame">
+        <h3 class="lead mt-4">Location</h3>
+        <div id="map"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+        integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js"
+        integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy"
+        crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+
+    <script>
+        var map = L.map('map').setView([0, 0], 2);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        var redIcon = new L.Icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41],
+            className: 'red-marker',
+        });
+
+        var greenIcon = new L.Icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41],
+            className: 'blue-marker',
+        });
+
+        var baseMarker = L.marker([0, 0], { icon: redIcon }).addTo(map);
+        var testMarker = L.marker([0, 0], { icon: greenIcon }).addTo(map);
+
+        baseMarker.bindPopup("Base");
+        testMarker.bindPopup("Test");
+
+        function updateMap() {
+            fetch('/gps_data')
+                .then(response => response.json())
+                .then(data => {
+                    var basePoint = data[0];
+                    var testPoint = data[1];
+
+                    baseMarker.setLatLng([basePoint.lat, basePoint.lng]);
+                    testMarker.setLatLng([testPoint.lat, testPoint.lng]);
+
+                    var bounds = L.latLngBounds([baseMarker.getLatLng(), testMarker.getLatLng()]);
+                    map.fitBounds(bounds, { padding: [50, 50], maxZoom: 4 });
+                });
+        }
+
+        function previousFrame() {
+            fetch('/previous_frame').then(() => {
+                updateFrames();
+                updateMap();
+            });
+        }
+
+        function nextFrame() {
+            fetch('/next_frame').then(() => {
+                updateFrames();
+                updateMap();
+            });
+        }
+
+        function resetFrame() {
+            fetch('/reset_frame').then(() => {
+                updateFrames();
+                updateMap();
+            });
+        }
+
+        function selectFrame(idx) {
+            fetch('/select_frame?frame_id=' + idx).then(() => {
+                updateFrames();
+                updateMap();
+            });
+        }
+
+        function sizeFrames() {
+            fetch('/size_frames')
+                .then(response => response.text())
+                .then(size => {
+                    // console.log("test size: " + size);
+                    var select = document.getElementById("frameSelect");
+                    for (let i = 0; i < parseInt(size); i++) {
+                        var optionElement = document.createElement("option");
+                        optionElement.value = i;
+                        optionElement.textContent = i;
+                        select.appendChild(optionElement);                        
+                    }
+
+                    select.addEventListener("change", function () {
+                        var selectedValue = select.value;
+                        // console.log("Selecionado:", selectedValue);
+                        selectFrame(selectedValue);
+                    });
+                });
+        }
+
+        function updateFrame(frameId, feedUrl) {
+            var imgElement = document.getElementById(frameId);
+            imgElement.src = "/static/wait.gif"; // Mostrar o GIF de "Aguarde"
+
+            fetch(feedUrl).then(response => {
+                if (!response.ok) {
+                    throw new Error('Erro na requisição');
+                }
+                return response.blob();
+            }).then(blob => {
+                var imgUrl = URL.createObjectURL(blob);
+                imgElement.src = imgUrl; // Substituir o GIF pela imagem real
+            }).catch(error => {
+                console.error('Erro:', error);
+            });
+        }
+
+        function updateFrames() {
+            updateFrame('base_frame', '/base_frame_feed');
+            updateFrame('test_frame', '/test_frame_feed');
+            updateFrame('change_frame', '/change_frame_feed');
+            updateFrame('compass_frame', '/compass_frame_feed');
+
+            fetch('/current_index')
+                .then(response => response.text())
+                .then(index => {
+                    document.getElementById('currentIndex').textContent = index;
+                });
+        }
+
+        var isPlaying = false;
+        var playInterval;
+
+        function play() {
+            isPlaying = true;
+            playInterval = setInterval(function () {
+                nextFrame();
+            }, 7000); // Change the interval as needed (e.g., 1000ms = 1 second)
+        }
+
+        function stop() {
+            isPlaying = false;
+            clearInterval(playInterval);
+        }
+
+        function togglePlay() {
+            if (isPlaying) {
+                stop();
+            } else {
+                play();
+            }
+        }
+
+        // Update the button labels based on the current state
+        function updateButtonLabels() {
+            var playButton = document.getElementById('playButton');
+            if (isPlaying) {
+                playButton.innerHTML = '<i class="fas fa-stop"></i> Stop';
+                playButton.classList.remove("btn-success");
+                playButton.classList.add("btn-danger");
+            } else {
+                playButton.innerHTML = '<i class="fas fa-play"></i> Play';
+                playButton.classList.remove("btn-danger");
+                playButton.classList.add("btn-success");
+            }
+        }
+
+        // Execute the togglePlay function when the play/stop button is clicked
+        document.getElementById('playButton').addEventListener('click', function () {
+            togglePlay();
+            updateButtonLabels();
+        });
+
+        // Execute the nextFrame function initially to start playing immediately
+        setTimeout(function () {
+            // nextFrame();
+            // play();
+            // updateButtonLabels();
+            resetFrame();
+            sizeFrames();
+        }, 5000); // Delay the initial frame update and start playing after 5 seconds
+
+    </script>
+</body>
+
+</html>
